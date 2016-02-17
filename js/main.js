@@ -3,15 +3,12 @@ var game = new Phaser.Game(448, 496, Phaser.AUTO);
         this.map = null;
         this.layer = null;
         this.pacman = null;
-        this.car = null;
-        this.cartwo = null;
-        this.carthree = null;
-        this.carfour = null;
         this.safetile = 14;
         this.gridsize = 16;
         this.speed = 150;
         this.threshold = 3;
-        this.hitcount = 2;
+        this.timeCount = 0;
+        this.bestScore = null;
         this.marker = new Phaser.Point();
         this.turnPoint = new Phaser.Point();
         this.directions = [ null, null, null, null, null ];
@@ -36,7 +33,6 @@ var game = new Phaser.Game(448, 496, Phaser.AUTO);
             this.load.image('tiles', 'assets/pacman-tiles.png');
             this.load.spritesheet('pacman', 'assets/pacman.png', 32, 32);
             this.load.tilemap('map', 'assets/pacman-map.json', null, Phaser.Tilemap.TILED_JSON);
-            this.load.image('car', 'assets/car.png');
             //  Needless to say, graphics (C)opyright Namco
         },
         create: function () {
@@ -58,33 +54,23 @@ var game = new Phaser.Game(448, 496, Phaser.AUTO);
             this.physics.arcade.enable(this.pacman);
             this.pacman.body.setSize(16, 16, 0, 0);
             
-            //Add enemy to game
-            this.car = this.add.sprite(16+8, 16+8, 'car', 0);
-            this.car.anchor.set(0.5);
-            this.physics.arcade.enable(this.car);
-            this.car.body.setSize(16,16,0,0);
-            
-            //Add enemy to game
-            this.cartwo = this.add.sprite((16*15)+8, (16*21)+8, 'car', 0);
-            this.cartwo.anchor.set(0.5);
-            this.physics.arcade.enable(this.cartwo);
-            this.cartwo.body.setSize(16,16,0,0);
-            
-            //Add enemy to game
-            this.carthree = this.add.sprite((16*10)+8, (16*1)+8, 'car', 0);
-            this.carthree.anchor.set(0.5);
-            this.physics.arcade.enable(this.carthree);
-            this.carthree.body.setSize(16,16,0,0);
-            
-            //Add enemy to game
-            this.carfour = this.add.sprite((16*11)+8, (16*22)+8, 'car', 0);
-            this.carfour.anchor.set(0.5);
-            this.physics.arcade.enable(this.carfour);
-            this.carfour.body.setSize(16,16,0,0);
-            
             this.cursors = this.input.keyboard.createCursorKeys();
             this.pacman.play('munch');
             this.move(Phaser.LEFT);
+            
+            var style = { font: "24px Arial", fill: "#ffffff", align: "center" };
+            this.timer = game.add.text(32, 32, 'Time: ', style);
+            this.best = game.add.text(32, 54, 'Best: ', style);
+            var bigStyle = { font: "48px Arial", fill: "#ffffff", align: "center" };
+            this.directions = game.add.text(8, 200, 'COLLECT AS FAST \nAS POSSIBLE', bigStyle);
+            game.time.events.add(2000, function() {    
+                game.add.tween(this.directions).to({alpha: 0}, 500, Phaser.Easing.Linear.None, true);
+            }, this);
+            
+            this.motivation = game.add.text(70, 200,'',bigStyle);
+        },
+        fadeText: function (){
+            game.add.tween(this.directions).to( { alpha: 0 }, 2000, Phaser.Easing.Linear.None, true);
         },
         checkKeys: function () {
             if (this.cursors.left.isDown && this.current !== Phaser.LEFT)
@@ -177,8 +163,15 @@ var game = new Phaser.Game(448, 496, Phaser.AUTO);
         },
         eatDot: function (pacman, dot) {
             dot.kill();
+            this.speed += 1;
             if (this.dots.total === 0)
             {
+                this.speed = 150;
+                if(this.bestScore == null || this.bestScore > this.timeCount){
+                    this.bestScore = this.timeCount;
+                    this.best.text = "Best: " + this.bestScore;
+                }
+                this.timeCount = 0;
                 this.dots.callAll('revive');
             }
         },
@@ -187,28 +180,62 @@ var game = new Phaser.Game(448, 496, Phaser.AUTO);
             this.hitcount -= 1;
         },
         update: function () {
-          
+            
+            
+            this.timeCount += 1;
+            this.timer.text = "Time: " + this.timeCount;
+            
+            if(this.timeCount % 300 == 0){
+                game.time.events.add(1, function() {    
+                    game.add.tween(this.motivation).to({alpha: 100.0}, 100, Phaser.Easing.Linear.None, true);
+                }, this);
+                random = game.rnd.integerInRange(0,100);
+                if(random < 10){
+                    this.motivation.text = "BE THE BEST!";
+                }
+                if(random >= 10 && random < 20){
+                    this.motivation.text = "PUSH IT TO \nTHE EDGE!";
+                }
+                if(random >= 20 && random < 30){
+                    this.motivation.text = "YOU CAN DO IT!";
+                }
+                if(random >= 30 && random < 40){
+                    this.motivation.text = "GO! GO! GO!";
+                }
+                if(random >= 40 && random < 50){
+                    this.motivation.text = "THINK OUTSIDE \nTHE LINES!";
+                }
+                if(random >= 50 && random < 60){
+                    this.motivation.text = "EXPAND YOUR \nMINDSPACE!";
+                }
+                if(random >= 60 && random < 70){
+                    this.motivation.text = "BREAK DOWN \nBOUNDARIES!";
+                }
+                if(random >= 70 && random < 80){
+                    this.motivation.text = "SEEK NEW \nHORIZONS!";
+                }
+                if(random >= 80 && random < 90){
+                    this.motivation.text = "EAT THE DOTS!";
+                }
+                if(random >= 90 && random < 100){
+                    this.motivation.text = "ATTACK THE \nNEIGHBORS!";
+                }
+                if(random == 100){
+                    this.motivation.text = "I HAVEN'T SEEN \nMY KIDS IN YEARS!";
+                }
+                game.time.events.add(2000, function() {    
+                game.add.tween(this.motivation).to({alpha: 0}, 500, Phaser.Easing.Linear.None, true);
+            }, this);
+                
+                
+            }
+            
             this.physics.arcade.collide(this.pacman, this.layer);
-            this.physics.arcade.collide(this.car, this.layer);
-            this.physics.arcade.collide(this.cartwo, this.layer);
-            this.physics.arcade.collide(this.carthree, this.layer);
-            this.physics.arcade.collide(this.carfour, this.layer);
             this.physics.arcade.overlap(this.pacman, this.dots, this.eatDot, null, this);
             this.physics.arcade.overlap(this.pacman, this.car, this.fight, null, this);
             this.physics.arcade.overlap(this.pacman, this.cartwo, this.fight, null, this);
             this.physics.arcade.overlap(this.pacman, this.carthree, this.fight, null, this);
             this.physics.arcade.overlap(this.pacman, this.carfour, this.fight, null, this);
-            
-            // chase pacman
-            game.physics.arcade.moveToObject(this.car, this.pacman, 250);
-            game.physics.arcade.moveToObject(this.cartwo, this.pacman, 120);
-            game.physics.arcade.moveToObject(this.carthree, this.pacman, 50);
-            game.physics.arcade.moveToObject(this.carfour, this.pacman, 100);
-            
-            // check if pacman is dead
-            if(this.hitcount < 1){
-                this.pacman.kill();
-            }
             
             this.marker.x = this.math.snapToFloor(Math.floor(this.pacman.x), this.gridsize) / this.gridsize;
             this.marker.y = this.math.snapToFloor(Math.floor(this.pacman.y), this.gridsize) / this.gridsize;
